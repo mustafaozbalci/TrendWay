@@ -40,13 +40,14 @@ public class ProductService {
     @Transactional
     public ResponseEntity<ResponseModel> addProduct(ProductDTO productDTO) {
         logger.info("Adding product: {}", productDTO.getName());
-        Optional<Company> companyOpt = companyRepository.findByName(productDTO.getCompanyName());
+
+        Optional<Company> companyOpt = companyRepository.findById(productDTO.getCompanyId());
         if (companyOpt.isEmpty()) {
             throw new BadRequestException("Company not found", ErrorCodes.COMPANY_NOT_FOUND);
         }
 
         Company company = companyOpt.get();
-        List<Category> categories = productDTO.getCategoryNames().stream().map(name -> categoryRepository.findByName(name).orElseThrow(() -> new BadRequestException("Category not found: " + name, ErrorCodes.CATEGORY_NOT_FOUND))).collect(Collectors.toList());
+        List<Category> categories = productDTO.getCategoryIds().stream().map(id -> categoryRepository.findById(id).orElseThrow(() -> new BadRequestException("Category not found: " + id, ErrorCodes.CATEGORY_NOT_FOUND))).collect(Collectors.toList());
 
         Product product = new Product();
         product.setName(productDTO.getName());

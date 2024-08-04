@@ -1,17 +1,15 @@
 package commercial.TrendWay.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 public class ProductDTO {
     private String name;
     private String description;
-    private Double price;
-    private Integer stock;
-    private String companyName;
-    private List<String> categoryNames;
+    private double price;
+    private int stock;
+    private Long companyId;
+    private List<Long> categoryIds;
 }

@@ -1,15 +1,15 @@
 package commercial.TrendWay.service;
 
+import commercial.TrendWay.client.WalletClient;
 import commercial.TrendWay.dto.PaymentDTO;
+import commercial.TrendWay.dto.PaymentRequest;
 import commercial.TrendWay.dto.ResponseModel;
 import commercial.TrendWay.entity.Order;
 import commercial.TrendWay.entity.Payment;
-import commercial.TrendWay.entity.User;
 import commercial.TrendWay.exceptions.BadRequestException;
 import commercial.TrendWay.exceptions.ErrorCodes;
 import commercial.TrendWay.repository.OrderRepository;
 import commercial.TrendWay.repository.PaymentRepository;
-import commercial.TrendWay.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,32 +26,53 @@ public class PaymentService {
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
 
     private final OrderRepository orderRepository;
-    private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final WalletClient walletClient;
 
     /**
-     * Processes the payment for the given order.
+     * Processes a payment for the specified order.
+     * Validates order and company existence.
+     * Sends a payment request to the Wallet service.
+     * Records the payment in the database if successful.
      *
-     * @param paymentDTO DTO containing userId, orderId, payment method, and amount.
-     * @return ResponseEntity with ResponseModel indicating the result of the operation.
+     * @param paymentDTO DTO containing the order ID for which payment is to be processed.
+     * @return ResponseEntity with the result of the payment process.
      */
     @Transactional
     public ResponseEntity<ResponseModel> processPayment(PaymentDTO paymentDTO) {
-        logger.info("Processing payment for user ID: {}", paymentDTO.getUserId());
-        User user = userRepository.findById(paymentDTO.getUserId()).orElseThrow(() -> new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND));
-
+        logger.info("Processing payment for order ID: {}", paymentDTO.getOrderId());
         Order order = orderRepository.findById(paymentDTO.getOrderId()).orElseThrow(() -> new BadRequestException("Order not found", ErrorCodes.ORDER_NOT_FOUND));
+
+        if (order.getCompany() == null) {
+            throw new BadRequestException("Order does not have an associated company", ErrorCodes.COMPANY_NOT_FOUND);
+        }
+
+        double amount = order.getOrderItems().stream().mapToDouble(item -> item.getPrice() * item.getQuantity()).sum();
+        String payerUsername = order.getUser().getUsername();
+        String payerPassword = order.getUser().getPassword();
+        Long payeeUserId = order.getCompany().getWalletId();
+
+        PaymentRequest paymentRequest = new PaymentRequest();
+        paymentRequest.setPayerUsername(payerUsername);
+        paymentRequest.setPayerPassword(payerPassword);
+        paymentRequest.setPayeeUserId(payeeUserId);
+        paymentRequest.setAmount(amount);
+
+        ResponseEntity<ResponseModel> paymentResponse = walletClient.makePayment(paymentRequest);
+
+        if (!paymentResponse.getStatusCode().is2xxSuccessful()) {
+            throw new BadRequestException("Payment failed", ErrorCodes.INSUFFICIENT_BALANCE);
+        }
 
         Payment payment = new Payment();
         payment.setOrder(order);
+        payment.setAmount(amount);
         payment.setPaymentDate(new Date());
-        payment.setAmount(paymentDTO.getAmount());
-        payment.setPaymentMethod(paymentDTO.getPaymentMethod());
         payment.setStatus("Completed");
 
         paymentRepository.save(payment);
 
-        logger.info("Payment processed for user ID: {}", paymentDTO.getUserId());
-        return ResponseEntity.status(201).body(new ResponseModel(201, "Payment processed successfully", payment));
+        logger.info("Payment processed for order ID: {}", paymentDTO.getOrderId());
+        return paymentResponse;
     }
 }

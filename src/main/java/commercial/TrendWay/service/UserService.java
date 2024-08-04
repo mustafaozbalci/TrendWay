@@ -2,6 +2,7 @@ package commercial.TrendWay.service;
 
 import commercial.TrendWay.dto.ResponseModel;
 import commercial.TrendWay.dto.UserDTO;
+import commercial.TrendWay.entity.Cart;
 import commercial.TrendWay.entity.User;
 import commercial.TrendWay.exceptions.BadRequestException;
 import commercial.TrendWay.exceptions.ErrorCodes;
@@ -45,6 +46,9 @@ public class UserService {
         user.setAddress(userDTO.getAddress());
         user.setPhoneNumber(userDTO.getPhoneNumber());
         user.setRole(userDTO.getRoleName());
+        Cart cart = new Cart();
+        cart.setUser(user);
+        user.setCart(cart);
 
         user = userRepository.save(user);
         logger.info("User registered: {}", user.getUsername());

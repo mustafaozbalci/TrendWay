@@ -1,5 +1,6 @@
 package commercial.TrendWay.controller;
 
+import commercial.TrendWay.dto.CompanyDTO;
 import commercial.TrendWay.dto.ResponseModel;
 import commercial.TrendWay.entity.Company;
 import commercial.TrendWay.service.CompanyService;
@@ -19,7 +20,8 @@ public class CompanyController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ResponseModel> registerCompany(@RequestBody Company company) {
-        return companyService.registerCompany(company);
+    public ResponseEntity<ResponseModel> registerCompany(@RequestBody CompanyDTO companyDTO) {
+        Company company = companyService.registerCompany(companyDTO);
+        return ResponseEntity.status(201).body(new ResponseModel(201, "Company registered successfully", company));
     }
 }

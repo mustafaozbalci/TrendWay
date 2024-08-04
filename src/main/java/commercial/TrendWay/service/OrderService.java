@@ -1,16 +1,10 @@
 package commercial.TrendWay.service;
 
-import commercial.TrendWay.dto.OrderDTO;
 import commercial.TrendWay.dto.ResponseModel;
-import commercial.TrendWay.entity.Order;
-import commercial.TrendWay.entity.OrderItem;
-import commercial.TrendWay.entity.Product;
-import commercial.TrendWay.entity.User;
+import commercial.TrendWay.entity.*;
 import commercial.TrendWay.exceptions.BadRequestException;
 import commercial.TrendWay.exceptions.ErrorCodes;
-import commercial.TrendWay.repository.OrderRepository;
-import commercial.TrendWay.repository.ProductRepository;
-import commercial.TrendWay.repository.UserRepository;
+import commercial.TrendWay.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -31,41 +25,53 @@ public class OrderService {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
 
     /**
-     * Creates a new order for the given user.
+     * Creates an order for the specified user.
+     * Validates user existence and cart contents.
+     * Decrements product stock and creates order items.
      *
-     * @param orderDTO DTO containing userId and order items.
-     * @return ResponseEntity with ResponseModel indicating the result of the operation.
+     * @param userId ID of the user creating the order.
+     * @return ResponseEntity with the result of the order creation process.
      */
     @Transactional
-    public ResponseEntity<ResponseModel> createOrder(OrderDTO orderDTO) {
-        logger.info("Creating order for user ID: {}", orderDTO.getUserId());
-        User user = userRepository.findById(orderDTO.getUserId()).orElseThrow(() -> new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND));
+    public ResponseEntity<ResponseModel> createOrder(Long userId) {
+        logger.info("Creating order for user ID: {}", userId);
+        User user = userRepository.findById(userId).orElseThrow(() -> new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND));
 
-        List<OrderItem> orderItems = orderDTO.getOrderItems().stream().map(itemDTO -> {
-            Product product = productRepository.findById(itemDTO.getProductId()).orElseThrow(() -> new BadRequestException("Product not found", ErrorCodes.PRODUCT_NOT_FOUND));
-            if (product.getStock() < itemDTO.getQuantity()) {
+        Cart cart = cartRepository.findByUser(user).orElseThrow(() -> new BadRequestException("Cart not found", ErrorCodes.CART_NOT_FOUND));
+        List<CartItem> cartItems = cartItemRepository.findByCart(cart);
+
+        if (cartItems.isEmpty()) {
+            throw new BadRequestException("Cart is empty", ErrorCodes.CART_EMPTY);
+        }
+
+        List<OrderItem> orderItems = cartItems.stream().map(cartItem -> {
+            Product product = cartItem.getProduct();
+            if (product.getStock() < cartItem.getQuantity()) {
                 throw new BadRequestException("Insufficient stock for product: " + product.getName(), ErrorCodes.PRODUCT_NOT_FOUND);
             }
-            product.setStock(product.getStock() - itemDTO.getQuantity());
+            product.setStock(product.getStock() - cartItem.getQuantity());
             productRepository.save(product);
 
             OrderItem orderItem = new OrderItem();
             orderItem.setProduct(product);
-            orderItem.setQuantity(itemDTO.getQuantity());
+            orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setPrice(product.getPrice());
             return orderItem;
         }).collect(Collectors.toList());
 
         Order order = new Order();
         order.setUser(user);
+        order.setCompany(cartItems.get(0).getProduct().getCompany()); // Şirket bilgisini buradan ayarlıyoruz
         order.setOrderItems(orderItems);
         order.setOrderDate(new Date());
 
         orderRepository.save(order);
 
-        logger.info("Order created for user ID: {}", orderDTO.getUserId());
+        logger.info("Order created for user ID: {}", userId);
         return ResponseEntity.status(201).body(new ResponseModel(201, "Order created successfully", order));
     }
 }

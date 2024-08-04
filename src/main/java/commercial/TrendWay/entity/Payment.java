@@ -1,24 +1,29 @@
 package commercial.TrendWay.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.Date;
 
 @Entity
-@Data
-@Table(name = "payment")
+@Getter
+@Setter
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "order_id")
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
+    @Column(nullable = false)
+    private Double amount;
+
+    @Column(nullable = false)
     private Date paymentDate;
-    private double amount;
-    private String paymentMethod;
+
+    @Column(nullable = false)
     private String status;
 }

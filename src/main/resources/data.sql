@@ -1,3 +1,15 @@
+DROP TABLE IF EXISTS payment;
+DROP TABLE IF EXISTS order_item;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS cart_item;
+DROP TABLE IF EXISTS cart;
+DROP TABLE IF EXISTS product_category;
+DROP TABLE IF EXISTS product;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS role;
+DROP TABLE IF EXISTS category;
+DROP TABLE IF EXISTS company;
+
 -- Şirket tablosu ve verileri
 CREATE TABLE IF NOT EXISTS company
 (
@@ -10,14 +22,14 @@ CREATE TABLE IF NOT EXISTS company
     VARCHAR
 (
     255
-) NOT NULL );
+) NOT NULL,
+    wallet_id BIGINT
+    );
 
-INSERT INTO company (name)
-VALUES ('Example Company 1');
-INSERT INTO company (name)
-VALUES ('Example Company 2');
-INSERT INTO company (name)
-VALUES ('Example Company 3');
+INSERT INTO company (id, name, wallet_id)
+VALUES (1, 'Example Company 1', 1),
+       (2, 'Example Company 2', 2),
+       (3, 'Example Company 3', 3);
 
 -- Kategori tablosu ve verileri
 CREATE TABLE IF NOT EXISTS category
@@ -31,18 +43,12 @@ CREATE TABLE IF NOT EXISTS category
     VARCHAR
 (
     255
-) NOT NULL );
+) NOT NULL
+    );
 
-INSERT INTO category (name)
-VALUES ('Electronics');
-INSERT INTO category (name)
-VALUES ('Home Appliances');
-INSERT INTO category (name)
-VALUES ('Books');
-INSERT INTO category (name)
-VALUES ('Fashion');
-INSERT INTO category (name)
-VALUES ('Toys');
+INSERT INTO category (id, name)
+VALUES (1, 'Electronics'),
+       (2, 'Home Appliances');
 
 -- Rol tablosu ve verileri
 CREATE TABLE IF NOT EXISTS role
@@ -56,11 +62,12 @@ CREATE TABLE IF NOT EXISTS role
     VARCHAR
 (
     255
-) NOT NULL );
+) NOT NULL
+    );
 
-INSERT INTO role (name)
-VALUES ('ADMIN'),
-       ('USER');
+INSERT INTO role (id, name)
+VALUES (1, 'ADMIN'),
+       (2, 'USER');
 
 -- Kullanıcı tablosu ve verileri
 CREATE TABLE IF NOT EXISTS users
@@ -74,35 +81,48 @@ CREATE TABLE IF NOT EXISTS users
     VARCHAR
 (
     255
-) NOT NULL, password VARCHAR
+) NOT NULL,
+    password VARCHAR
 (
     255
-) NOT NULL, email VARCHAR
+) NOT NULL,
+    email VARCHAR
 (
     255
-), full_name VARCHAR
+),
+    full_name VARCHAR
 (
     255
-), address VARCHAR
+),
+    address VARCHAR
 (
     255
-), phone_number VARCHAR
+),
+    phone_number VARCHAR
 (
     255
-), role_id BIGINT, FOREIGN KEY
+),
+    role_id BIGINT,
+    FOREIGN KEY
 (
     role_id
 ) REFERENCES role
 (
     id
-) );
+)
+    );
 
-INSERT INTO users (username, password, email, full_name, address, phone_number, role_id)
-VALUES ('user1', 'password1', 'user1@example.com', 'User One', 'Address 1', '1234567890', 2),
-       ('user2', 'password2', 'user2@example.com', 'User Two', 'Address 2', '1234567891', 2),
-       ('user3', 'password3', 'user3@example.com', 'User Three', 'Address 3', '1234567892', 2),
-       ('user4', 'password4', 'user4@example.com', 'User Four', 'Address 4', '1234567893', 2),
-       ('user5', 'password5', 'user5@example.com', 'User Five', 'Address 5', '1234567894', 2);
+INSERT INTO users (id, username, password, email, full_name, address, phone_number, role_id)
+VALUES (1, 'u1', 'p1', 'u1@e.com', 'User One', 'Address 1', '1234567890', 2),
+       (2, 'u2', 'p2', 'u2@e.com', 'User Two', 'Address 2', '1234567891', 2),
+       (3, 'u3', 'p3', 'u3@e.com', 'User Three', 'Address 3', '1234567892', 2),
+       (4, 'u4', 'p4', 'u4@e.com', 'User Four', 'Address 4', '1234567893', 2),
+       (5, 'u5', 'p5', 'u5@e.com', 'User Five', 'Address 5', '1234567894', 2),
+       (6, 'u6', 'p6', 'u6@e.com', 'User Six', 'Address 6', '1234567895', 2),
+       (7, 'u7', 'p7', 'u7@e.com', 'User Seven', 'Address 7', '1234567896', 2),
+       (8, 'u8', 'p8', 'u8@e.com', 'User Eight', 'Address 8', '1234567897', 2),
+       (9, 'u9', 'p9', 'u9@e.com', 'User Nine', 'Address 9', '1234567898', 2),
+       (10, 'u10', 'p10', 'u10@e.com', 'User Ten', 'Address 10', '1234567899', 2);
 
 -- Ürün tablosu ve verileri
 CREATE TABLE IF NOT EXISTS product
@@ -116,13 +136,24 @@ CREATE TABLE IF NOT EXISTS product
     VARCHAR
 (
     255
-) NOT NULL, description TEXT, price DOUBLE, stock INT, company_id BIGINT, FOREIGN KEY
+) NOT NULL,
+    description TEXT,
+    price DOUBLE,
+    stock INT,
+    company_id BIGINT,
+    FOREIGN KEY
 (
     company_id
 ) REFERENCES company
 (
     id
-) );
+)
+    );
+
+INSERT INTO product (id, name, description, price, stock, company_id)
+VALUES (1, 'Laptop', 'High performance laptop', 1000.0, 10, 1),
+       (2, 'Smartphone', 'Latest model smartphone', 700.0, 15, 1),
+       (3, 'Blender', 'Powerful kitchen blender', 150.0, 20, 2);
 
 -- Product-Category bağlantı tablosu ve verileri
 CREATE TABLE IF NOT EXISTS product_category
@@ -138,39 +169,20 @@ CREATE TABLE IF NOT EXISTS product_category
 ) REFERENCES product
 (
     id
-), FOREIGN KEY
+),
+    FOREIGN KEY
 (
     category_id
 ) REFERENCES category
 (
     id
-) );
+)
+    );
 
--- Örnek ürünler ve kategoriler
-INSERT INTO product (name, description, price, stock, company_id)
-VALUES ('Laptop', 'High performance laptop', 1000.0, 10, 1),
-       ('Smartphone', 'Latest model smartphone', 700.0, 15, 1),
-       ('Blender', 'Powerful kitchen blender', 150.0, 20, 2),
-       ('Vacuum Cleaner', 'High suction vacuum cleaner', 300.0, 25, 2),
-       ('Novel', 'Bestselling novel', 20.0, 50, 3),
-       ('Textbook', 'Educational textbook', 50.0, 30, 3),
-       ('T-shirt', 'Comfortable cotton t-shirt', 15.0, 100, 1),
-       ('Jeans', 'Stylish blue jeans', 40.0, 75, 2),
-       ('Action Figure', 'Collectible action figure', 25.0, 40, 3),
-       ('Puzzle', '1000-piece jigsaw puzzle', 10.0, 60, 1);
-
--- Ürünleri kategorilere bağlama
 INSERT INTO product_category (product_id, category_id)
 VALUES (1, 1),
        (2, 1),
-       (3, 2),
-       (4, 2),
-       (5, 3),
-       (6, 3),
-       (7, 4),
-       (8, 4),
-       (9, 5),
-       (10, 5);
+       (3, 2);
 
 -- Sepet tablosu ve verileri
 CREATE TABLE IF NOT EXISTS cart
@@ -189,7 +201,20 @@ CREATE TABLE IF NOT EXISTS cart
 ) REFERENCES users
 (
     id
-) );
+)
+    );
+
+INSERT INTO cart (id, user_id)
+VALUES (1, 1),
+       (2, 2),
+       (3, 3),
+       (4, 4),
+       (5, 5),
+       (6, 6),
+       (7, 7),
+       (8, 8),
+       (9, 9),
+       (10, 10);
 
 -- Sepet Öğesi tablosu ve verileri
 CREATE TABLE IF NOT EXISTS cart_item
@@ -212,33 +237,15 @@ CREATE TABLE IF NOT EXISTS cart_item
 ) REFERENCES cart
 (
     id
-), FOREIGN KEY
+),
+    FOREIGN KEY
 (
     product_id
 ) REFERENCES product
 (
     id
-) );
-
--- Örnek sepet ve sepet öğeleri
-INSERT INTO cart (user_id)
-VALUES (1),
-       (2),
-       (3),
-       (4),
-       (5);
-
-INSERT INTO cart_item (cart_id, product_id, quantity)
-VALUES (1, 1, 2),
-       (1, 2, 1),
-       (2, 3, 4),
-       (2, 4, 1),
-       (3, 5, 3),
-       (3, 6, 2),
-       (4, 7, 5),
-       (4, 8, 1),
-       (5, 9, 2),
-       (5, 10, 3);
+)
+    );
 
 -- Sipariş tablosu ve verileri
 CREATE TABLE IF NOT EXISTS orders
@@ -261,7 +268,8 @@ CREATE TABLE IF NOT EXISTS orders
 ) REFERENCES users
 (
     id
-) );
+)
+    );
 
 -- Sipariş Öğesi tablosu ve verileri
 CREATE TABLE IF NOT EXISTS order_item
@@ -286,28 +294,15 @@ CREATE TABLE IF NOT EXISTS order_item
 ) REFERENCES orders
 (
     id
-), FOREIGN KEY
+),
+    FOREIGN KEY
 (
     product_id
 ) REFERENCES product
 (
     id
-) );
-
--- Örnek siparişler ve sipariş öğeleri
-INSERT INTO orders (user_id)
-VALUES (1),
-       (2),
-       (3),
-       (4),
-       (5);
-
-INSERT INTO order_item (order_id, product_id, quantity, price)
-VALUES (1, 1, 2, 1000.0),
-       (2, 2, 1, 700.0),
-       (3, 3, 4, 150.0),
-       (4, 4, 1, 300.0),
-       (5, 5, 3, 20.0);
+)
+    );
 
 -- Ödeme tablosu ve verileri
 CREATE TABLE IF NOT EXISTS payment
@@ -329,21 +324,16 @@ CREATE TABLE IF NOT EXISTS payment
     VARCHAR
 (
     255
-), status VARCHAR
+),
+    status VARCHAR
 (
     255
-), FOREIGN KEY
+),
+    FOREIGN KEY
 (
     order_id
 ) REFERENCES orders
 (
     id
-) );
-
--- Örnek ödemeler
-INSERT INTO payment (order_id, amount, payment_method, status)
-VALUES (1, 2000.0, 'Credit Card', 'Completed'),
-       (2, 700.0, 'PayPal', 'Completed'),
-       (3, 600.0, 'Credit Card', 'Completed'),
-       (4, 300.0, 'Bank Transfer', 'Pending'),
-       (5, 60.0, 'Credit Card', 'Completed');
+)
+    );

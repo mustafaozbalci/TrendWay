@@ -3,6 +3,7 @@ package commercial.TrendWay.entity;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
 
 import java.util.Date;
 import java.util.List;
@@ -18,6 +19,10 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
+
+    @Getter
+    @ManyToOne
+    private Company company;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     @JsonManagedReference

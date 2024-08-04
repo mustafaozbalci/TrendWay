@@ -1,15 +1,13 @@
 package commercial.TrendWay.service;
 
-import commercial.TrendWay.dto.ResponseModel;
+import commercial.TrendWay.dto.CompanyDTO;
 import commercial.TrendWay.entity.Company;
 import commercial.TrendWay.exceptions.BadRequestException;
 import commercial.TrendWay.exceptions.ErrorCodes;
 import commercial.TrendWay.repository.CompanyRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -22,22 +20,24 @@ public class CompanyService {
 
     private final CompanyRepository companyRepository;
 
-    /**
-     * Registers a new company.
-     *
-     * @param company Company entity.
-     * @return ResponseEntity with ResponseModel indicating the result of the operation.
-     */
-    @Transactional
-    public ResponseEntity<ResponseModel> registerCompany(Company company) {
-        logger.info("Registering company: {}", company.getName());
-        Optional<Company> existingCompany = companyRepository.findByName(company.getName());
+    public Company registerCompany(CompanyDTO companyDTO) {
+        logger.info("Registering company: {}", companyDTO.getName());
+
+        Optional<Company> existingCompany = companyRepository.findByName(companyDTO.getName());
         if (existingCompany.isPresent()) {
             throw new BadRequestException("Company already exists", ErrorCodes.COMPANY_ALREADY_EXISTS);
         }
 
-        Company savedCompany = companyRepository.save(company);
-        logger.info("Company registered: {}", company.getName());
-        return ResponseEntity.status(201).body(new ResponseModel(201, "Company registered successfully", savedCompany));
+        Company company = new Company();
+        company.setName(companyDTO.getName());
+        company.setAddress(companyDTO.getAddress());
+        company.setEmail(companyDTO.getEmail());
+        company.setPhoneNumber(companyDTO.getPhoneNumber());
+        company.setWalletId(companyDTO.getWalletId());
+
+        companyRepository.save(company);
+
+        logger.info("Company registered: {}", companyDTO.getName());
+        return company;
     }
 }

@@ -19,6 +19,9 @@ public class OrderController {
 
     @PostMapping("/create")
     public ResponseEntity<ResponseModel> createOrder(@RequestBody OrderDTO orderDTO) {
-        return orderService.createOrder(orderDTO);
+        if (orderDTO.getUserId() == null) {
+            return ResponseEntity.badRequest().body(new ResponseModel(400, "User ID cannot be null", null));
+        }
+        return orderService.createOrder(orderDTO.getUserId());
     }
 }
