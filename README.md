@@ -1,3 +1,4 @@
+In order to try this project. You have to pull Wallet App first. Run Wallet, then run TrendWay.
 # TrendWay
 User: Kullanıcıyı temsil eder ve her kullanıcı yalnızca bir role sahip olabilir. Ayrıca, her kullanıcının bir alışveriş sepeti olabilir. Bir kullanıcı birden fazla sipariş verebilir ve her sipariş için ödeme yapabilir.
 
