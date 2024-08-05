@@ -41,9 +41,14 @@ public class CartService {
     @Transactional
     public ResponseEntity<ResponseModel> addToCart(CartItemDTO cartItemDTO) {
         logger.info("Adding product to cart for user ID: {}", cartItemDTO.getUserId());
-        User user = userRepository.findById(cartItemDTO.getUserId()).orElseThrow(() -> new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND));
-        Product product = productRepository.findById(cartItemDTO.getProductId()).orElseThrow(() -> new BadRequestException("Product not found", ErrorCodes.PRODUCT_NOT_FOUND));
-
+        User user = userRepository.findById(cartItemDTO.getUserId()).orElseThrow(() -> {
+            logger.warn("User not found: {}", cartItemDTO.getUserId());
+            return new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND);
+        });
+        Product product = productRepository.findById(cartItemDTO.getProductId()).orElseThrow(() -> {
+            logger.warn("Product not found: {}", cartItemDTO.getProductId());
+            return new BadRequestException("Product not found", ErrorCodes.PRODUCT_NOT_FOUND);
+        });
         Cart cart = cartRepository.findByUser(user).orElseGet(() -> {
             Cart newCart = new Cart();
             newCart.setUser(user);
@@ -70,13 +75,23 @@ public class CartService {
     @Transactional
     public ResponseEntity<ResponseModel> removeFromCart(CartItemDTO cartItemDTO) {
         logger.info("Removing product from cart for user ID: {}", cartItemDTO.getUserId());
-        User user = userRepository.findById(cartItemDTO.getUserId()).orElseThrow(() -> new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND));
-        Product product = productRepository.findById(cartItemDTO.getProductId()).orElseThrow(() -> new BadRequestException("Product not found", ErrorCodes.PRODUCT_NOT_FOUND));
+        User user = userRepository.findById(cartItemDTO.getUserId()).orElseThrow(() -> {
+            logger.warn("User not found: {}", cartItemDTO.getUserId());
+            return new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND);
+        });
+        Product product = productRepository.findById(cartItemDTO.getProductId()).orElseThrow(() -> {
+            logger.warn("Product not found: {}", cartItemDTO.getProductId());
+            return new BadRequestException("Product not found", ErrorCodes.PRODUCT_NOT_FOUND);
+        });
 
-        Cart cart = cartRepository.findByUser(user).orElseThrow(() -> new BadRequestException("Cart not found", ErrorCodes.CART_NOT_FOUND));
+        Cart cart = cartRepository.findByUser(user).orElseThrow(() -> {
+            logger.warn("Cart not found for user ID: {}", cartItemDTO.getUserId());
+            return new BadRequestException("Cart not found", ErrorCodes.CART_NOT_FOUND);
+        });
         List<CartItem> cartItems = cartItemRepository.findByCartAndProduct(cart, product);
 
         if (cartItems.isEmpty()) {
+            logger.warn("Cart item not found for product ID: {}", cartItemDTO.getProductId());
             throw new BadRequestException("Cart item not found", ErrorCodes.CART_ITEM_NOT_FOUND);
         }
 
@@ -93,8 +108,14 @@ public class CartService {
      */
     public ResponseEntity<ResponseModel> getCart(Long userId) {
         logger.info("Retrieving cart for user ID: {}", userId);
-        User user = userRepository.findById(userId).orElseThrow(() -> new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND));
-        Cart cart = cartRepository.findByUser(user).orElseThrow(() -> new BadRequestException("Cart not found", ErrorCodes.CART_NOT_FOUND));
+        User user = userRepository.findById(userId).orElseThrow(() -> {
+            logger.warn("User not found: {}", userId);
+            return new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND);
+        });
+        Cart cart = cartRepository.findByUser(user).orElseThrow(() -> {
+            logger.warn("Cart not found for user ID: {}", userId);
+            return new BadRequestException("Cart not found", ErrorCodes.CART_NOT_FOUND);
+        });
 
         logger.info("Cart retrieved for user ID: {}", userId);
         return ResponseEntity.ok(new ResponseModel(200, "Cart retrieved", cart));

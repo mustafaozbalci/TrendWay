@@ -41,13 +41,17 @@ public class PaymentService {
     @Transactional
     public ResponseEntity<ResponseModel> processPayment(PaymentDTO paymentDTO) {
         logger.info("Processing payment for order ID: {}", paymentDTO.getOrderId());
-        Order order = orderRepository.findById(paymentDTO.getOrderId()).orElseThrow(() -> new BadRequestException("Order not found", ErrorCodes.ORDER_NOT_FOUND));
+        Order order = orderRepository.findById(paymentDTO.getOrderId()).orElseThrow(() -> {
+            logger.warn("Order not found: {}", paymentDTO.getOrderId());
+            return new BadRequestException("Order not found", ErrorCodes.ORDER_NOT_FOUND);
+        });
 
         if (order.getCompany() == null) {
+            logger.warn("Order does not have an associated company");
             throw new BadRequestException("Order does not have an associated company", ErrorCodes.COMPANY_NOT_FOUND);
         }
 
-        double amount = order.getOrderItems().stream().mapToDouble(item -> item.getPrice() * item.getQuantity()).sum();
+        double amount = order.getTotalAmount(); // Siparişin toplam tutarını alın
         String payerUsername = order.getUser().getUsername();
         String payerPassword = order.getUser().getPassword();
         Long payeeUserId = order.getCompany().getWalletId();
@@ -61,6 +65,7 @@ public class PaymentService {
         ResponseEntity<ResponseModel> paymentResponse = walletClient.makePayment(paymentRequest);
 
         if (!paymentResponse.getStatusCode().is2xxSuccessful()) {
+            logger.error("Payment failed for order ID: {}", paymentDTO.getOrderId());
             throw new BadRequestException("Payment failed", ErrorCodes.INSUFFICIENT_BALANCE);
         }
 

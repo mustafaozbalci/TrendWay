@@ -43,11 +43,15 @@ public class ProductService {
 
         Optional<Company> companyOpt = companyRepository.findById(productDTO.getCompanyId());
         if (companyOpt.isEmpty()) {
+            logger.warn("Company not found: {}", productDTO.getCompanyId());
             throw new BadRequestException("Company not found", ErrorCodes.COMPANY_NOT_FOUND);
         }
 
         Company company = companyOpt.get();
-        List<Category> categories = productDTO.getCategoryIds().stream().map(id -> categoryRepository.findById(id).orElseThrow(() -> new BadRequestException("Category not found: " + id, ErrorCodes.CATEGORY_NOT_FOUND))).collect(Collectors.toList());
+        List<Category> categories = productDTO.getCategoryIds().stream().map(id -> categoryRepository.findById(id).orElseThrow(() -> {
+            logger.warn("Category not found: {}", id);
+            return new BadRequestException("Category not found: " + id, ErrorCodes.CATEGORY_NOT_FOUND);
+        })).collect(Collectors.toList());
 
         Product product = new Product();
         product.setName(productDTO.getName());

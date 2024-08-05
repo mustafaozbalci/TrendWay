@@ -35,6 +35,7 @@ public class UserService {
         logger.info("Registering user: {}", userDTO.getUsername());
         Optional<User> existingUser = userRepository.findByUsername(userDTO.getUsername());
         if (existingUser.isPresent()) {
+            logger.warn("User already exists: {}", userDTO.getUsername());
             throw new BadRequestException("User already exists", ErrorCodes.USER_ALREADY_EXISTS);
         }
 

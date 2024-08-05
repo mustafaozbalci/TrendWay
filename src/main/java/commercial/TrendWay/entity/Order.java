@@ -29,4 +29,5 @@ public class Order {
     private List<OrderItem> orderItems;
 
     private Date orderDate;
+    private double totalAmount;
 }

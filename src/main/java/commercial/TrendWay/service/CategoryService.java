@@ -33,6 +33,7 @@ public class CategoryService {
         logger.info("Adding category: {}", category.getName());
         Optional<Category> existingCategory = categoryRepository.findByName(category.getName());
         if (existingCategory.isPresent()) {
+            logger.warn("Category already exists: {}", category.getName());
             throw new BadRequestException("Category already exists", ErrorCodes.CATEGORY_ALREADY_EXISTS);
         }
 
@@ -52,6 +53,7 @@ public class CategoryService {
         logger.info("Updating category ID: {}", category.getId());
         Optional<Category> existingCategory = categoryRepository.findById(category.getId());
         if (existingCategory.isEmpty()) {
+            logger.warn("Category not found: {}", category.getId());
             throw new BadRequestException("Category not found", ErrorCodes.CATEGORY_NOT_FOUND);
         }
 

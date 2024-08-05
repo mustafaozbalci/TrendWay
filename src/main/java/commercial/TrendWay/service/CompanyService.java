@@ -20,11 +20,18 @@ public class CompanyService {
 
     private final CompanyRepository companyRepository;
 
+    /**
+     * Registers a new company.
+     *
+     * @param companyDTO DTO containing company details.
+     * @return The registered Company entity.
+     */
     public Company registerCompany(CompanyDTO companyDTO) {
         logger.info("Registering company: {}", companyDTO.getName());
 
         Optional<Company> existingCompany = companyRepository.findByName(companyDTO.getName());
         if (existingCompany.isPresent()) {
+            logger.warn("Company already exists: {}", companyDTO.getName());
             throw new BadRequestException("Company already exists", ErrorCodes.COMPANY_ALREADY_EXISTS);
         }
 
