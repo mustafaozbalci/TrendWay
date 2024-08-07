@@ -2,31 +2,32 @@ package commercial.TrendWay.client;
 
 import commercial.TrendWay.dto.PaymentRequest;
 import commercial.TrendWay.dto.ResponseModel;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 @Component
-@RequiredArgsConstructor
 public class WalletClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(WalletClient.class);
     private final RestTemplate restTemplate;
+    private final String walletServiceUrl;
+
+    public WalletClient(RestTemplate restTemplate, @Value("${wallet.service.url}") String walletServiceUrl) {
+        this.restTemplate = restTemplate;
+        this.walletServiceUrl = walletServiceUrl;
+    }
 
     public ResponseEntity<ResponseModel> makePayment(PaymentRequest paymentRequest) {
-        logger.info("Sending payment request to Wallet: {}", paymentRequest);
-        String url = "http://localhost:8081/wallets/make-payment";
-        ResponseEntity<ResponseModel> response = null;
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("payerUsername", paymentRequest.getPayerUsername());
+        headers.set("payerPassword", paymentRequest.getPayerPassword());
+
+        HttpEntity<PaymentRequest> entity = new HttpEntity<>(new PaymentRequest(null, null, paymentRequest.getPayeeWalletId(), paymentRequest.getAmount()), headers);
         try {
-            response = restTemplate.postForEntity(url, paymentRequest, ResponseModel.class);
+            return restTemplate.exchange(walletServiceUrl + "/wallets/make-payment", HttpMethod.POST, entity, ResponseModel.class);
         } catch (Exception e) {
-            logger.error("Error while making payment request: {}", e.getMessage());
-            throw e;
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(500, "Payment service error: " + e.getMessage(), null));
         }
-        logger.info("Payment response: {}", response);
-        return response;
     }
 }

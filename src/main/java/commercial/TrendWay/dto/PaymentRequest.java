@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 public class PaymentRequest {
     private String payerUsername;
     private String payerPassword;
-    private Long payeeUserId;
+    private Long payeeWalletId;
     private Double amount;
-
 }

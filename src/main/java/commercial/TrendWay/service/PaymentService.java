@@ -1,83 +1,57 @@
 package commercial.TrendWay.service;
 
 import commercial.TrendWay.client.WalletClient;
-import commercial.TrendWay.dto.PaymentDTO;
 import commercial.TrendWay.dto.PaymentRequest;
 import commercial.TrendWay.dto.ResponseModel;
 import commercial.TrendWay.entity.Order;
-import commercial.TrendWay.entity.Payment;
-import commercial.TrendWay.exceptions.BadRequestException;
-import commercial.TrendWay.exceptions.ErrorCodes;
 import commercial.TrendWay.repository.OrderRepository;
-import commercial.TrendWay.repository.PaymentRepository;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 public class PaymentService {
-
     private static final Logger logger = LoggerFactory.getLogger(PaymentService.class);
 
     private final OrderRepository orderRepository;
-    private final PaymentRepository paymentRepository;
     private final WalletClient walletClient;
 
-    /**
-     * Processes a payment for the specified order.
-     * Validates order and company existence.
-     * Sends a payment request to the Wallet service.
-     * Records the payment in the database if successful.
-     *
-     * @param paymentDTO DTO containing the order ID for which payment is to be processed.
-     * @return ResponseEntity with the result of the payment process.
-     */
-    @Transactional
-    public ResponseEntity<ResponseModel> processPayment(PaymentDTO paymentDTO) {
-        logger.info("Processing payment for order ID: {}", paymentDTO.getOrderId());
-        Order order = orderRepository.findById(paymentDTO.getOrderId()).orElseThrow(() -> {
-            logger.warn("Order not found: {}", paymentDTO.getOrderId());
-            return new BadRequestException("Order not found", ErrorCodes.ORDER_NOT_FOUND);
-        });
+    public PaymentService(OrderRepository orderRepository, WalletClient walletClient) {
+        this.orderRepository = orderRepository;
+        this.walletClient = walletClient;
+    }
 
-        if (order.getCompany() == null) {
-            logger.warn("Order does not have an associated company");
-            throw new BadRequestException("Order does not have an associated company", ErrorCodes.COMPANY_NOT_FOUND);
+    public ResponseEntity<ResponseModel> processPayment(Long orderId, String payerUsername, String payerPassword) {
+        Optional<Order> optionalOrder = orderRepository.findById(orderId);
+        if (optionalOrder.isEmpty()) {
+            logger.warn("Order not found with ID: {}", orderId);
+            return ResponseEntity.badRequest().body(new ResponseModel(400, "Order not found", null));
         }
 
-        double amount = order.getTotalAmount(); // Siparişin toplam tutarını alın
-        String payerUsername = order.getUser().getUsername();
-        String payerPassword = order.getUser().getPassword();
-        Long payeeUserId = order.getCompany().getWalletId();
+        Order order = optionalOrder.get();
+        double totalAmount = order.getTotalAmount();
+        Long payeeWalletId = order.getCompany().getWalletId();
 
-        PaymentRequest paymentRequest = new PaymentRequest();
-        paymentRequest.setPayerUsername(payerUsername);
-        paymentRequest.setPayerPassword(payerPassword);
-        paymentRequest.setPayeeUserId(payeeUserId);
-        paymentRequest.setAmount(amount);
+        logger.info("Order ID: {}, Total Amount: {}, Payee Wallet ID: {}", orderId, totalAmount, payeeWalletId);
 
+        if (payeeWalletId == null) {
+            logger.warn("Payee Wallet ID is null for order ID: {}", orderId);
+            return ResponseEntity.badRequest().body(new ResponseModel(400, "Payee Wallet ID is null", null));
+        }
+
+        PaymentRequest paymentRequest = new PaymentRequest(payerUsername, payerPassword, payeeWalletId, totalAmount);
+        logger.info("Sending payment request to Wallet service: {}", paymentRequest);
         ResponseEntity<ResponseModel> paymentResponse = walletClient.makePayment(paymentRequest);
 
-        if (!paymentResponse.getStatusCode().is2xxSuccessful()) {
-            logger.error("Payment failed for order ID: {}", paymentDTO.getOrderId());
-            throw new BadRequestException("Payment failed", ErrorCodes.INSUFFICIENT_BALANCE);
+        if (paymentResponse.getBody() == null) {
+            logger.error("Payment response body is null for order ID: {}", orderId);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(500, "Payment processing failed", null));
         }
 
-        Payment payment = new Payment();
-        payment.setOrder(order);
-        payment.setAmount(amount);
-        payment.setPaymentDate(new Date());
-        payment.setStatus("Completed");
-
-        paymentRepository.save(payment);
-
-        logger.info("Payment processed for order ID: {}", paymentDTO.getOrderId());
         return paymentResponse;
     }
 }

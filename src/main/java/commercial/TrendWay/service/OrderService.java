@@ -28,14 +28,6 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
 
-    /**
-     * Creates an order for the specified user.
-     * Validates user existence and cart contents.
-     * Decrements product stock and creates order items.
-     *
-     * @param userId ID of the user creating the order.
-     * @return ResponseEntity with the result of the order creation process.
-     */
     @Transactional
     public ResponseEntity<ResponseModel> createOrder(Long userId) {
         logger.info("Creating order for user ID: {}", userId);
@@ -64,6 +56,13 @@ public class OrderService {
             totalAmount += product.getPrice() * cartItem.getQuantity();
         }
 
+        // Order nesnesini burada tanımlıyoruz
+        Order order = new Order();
+        order.setUser(user);
+        order.setCompany(cartItems.get(0).getProduct().getCompany());
+        order.setOrderDate(new Date());
+        order.setTotalAmount(totalAmount);
+
         List<OrderItem> orderItems = cartItems.stream().map(cartItem -> {
             Product product = cartItem.getProduct();
             product.setStock(product.getStock() - cartItem.getQuantity());
@@ -73,16 +72,11 @@ public class OrderService {
             orderItem.setProduct(product);
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setPrice(product.getPrice());
+            orderItem.setOrder(order);
             return orderItem;
         }).collect(Collectors.toList());
 
-        Order order = new Order();
-        order.setUser(user);
-        order.setCompany(cartItems.get(0).getProduct().getCompany());
         order.setOrderItems(orderItems);
-        order.setOrderDate(new Date());
-        order.setTotalAmount(totalAmount);
-
         orderRepository.save(order);
 
         logger.info("Order created for user ID: {}", userId);
