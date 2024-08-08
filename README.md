@@ -1,6 +1,7 @@
+
 # TrendWay Project
 
-This project consists of two separate applications: **TrendWay** and **Wallet App**. To try this project, you need to pull and run the Wallet App first. After that, you can run the TrendWay application.
+This project consists of two separate applications: **TrendWay** and **Wallet App**(https://github.com/mustafaozbalci/Wallet). To try this project, you need to pull and run the Wallet App first. After that, you can run the TrendWay application.
 
 ## Getting Started
 
@@ -18,73 +19,139 @@ This project consists of two separate applications: **TrendWay** and **Wallet Ap
 
 - Users must register with the same username and password in the Wallet App for payments to be processed.
 
-## TrendWay Components
+## Predefined Data
 
-### User
+The system comes with predefined data for quick testing and demonstration purposes.
 
-- Represents a user, each of whom can have only one role (e.g., customer or admin).
-- Each user can have a shopping cart.
-- Users can place multiple orders and make payments for each order.
+### Users
 
-### Role
-
-- Defines various permissions for users. Users can be classified into different roles, such as customer or admin.
+| ID    | Username | Password | Role  | Email            |
+|-------|----------|----------|-------|------------------|
+| 10001 | user     | pu       | USER  | user@example.com |
+| 10002 | admin    | pc       | ADMIN | admin@example.com|
 
 ### Company
 
-- Represents companies that produce or sell products.
-- Companies can be managed by users.
+| ID    | Name            | Wallet ID | User ID |
+|-------|-----------------|-----------|---------|
+| 10001 | Example Company | 10001     | 10002   |
 
-### Category
+### Products
 
-- Defines the categories of products. A product can belong to multiple categories.
-
-### Product
-
-- Represents the products being sold. Products can belong to one or more categories and can be produced by a company.
-- The stock quantity of products can be updated.
-
-### Cart
-
-- Represents the user's shopping cart. Users can add or remove products from the cart.
-- The cart contains the products belonging to the user.
-
-### CartItem
-
-- Represents each product in the cart. There can be multiple products in the cart, and the quantity of each product can be specified.
-- If an existing product is added to the cart, its quantity is updated.
-
-### Order
-
-- Represents the orders placed by the user. A user can place multiple orders.
-- Orders are tracked with order date and the items (OrderItem) they contain.
-- When an order is created, the products in the user's cart are converted to the order, and the cart is emptied.
-
-### OrderItem
-
-- Represents each product in an order. Each OrderItem contains a product (Product) and its quantity.
-
-### Payment
-
-- Represents payments made for orders. Each payment is linked to an order (Order).
-- Payment transactions include payment method, amount, payment date, and status information.
+| ID    | Name        | Description                | Price | Stock | Company ID |
+|-------|-------------|----------------------------|-------|-------|------------|
+| 10001 | Product One | Description for Product One| 100.0 | 50    | 10001      |
+| 10002 | Product Two | Description for Product Two| 200.0 | 30    | 10001      |
 
 ## Steps to Use
 
-1. **User and Company Registrations**:
-   - Register new users and admins.
-   - Register companies and assign them to admins.
+### 1. Cart Operations
 
-2. **Add and Manage Products**:
-   - Add products for companies.
-   - Update the stock of existing products.
+#### Add to Cart
 
-3. **Cart Operations**:
-   - Users can add or remove products from their cart.
-   - The cart content can be viewed.
+1. **Endpoint**: `POST /carts/add`
+2. **Headers**:
+   - `payerUsername: user`
+   - `payerPassword: pu`
+3. **Body**:
+   ```json
+   {
+       "userId": 10001,
+       "productId": 10001,
+       "quantity": 2
+   }
+   ```
 
-4. **Create Orders and Make Payments**:
-   - Users can create orders with the products in their cart.
-   - Users can make payments for their orders using the same username and password registered in the Wallet App.
+#### Remove From Cart
 
-These steps and components describe the basic functionality of the TrendWay application and how users can interact with it.
+1. **Endpoint**: `POST /carts/remove`
+2. **Headers**:
+   - `payerUsername: user`
+   - `payerPassword: pu`
+3. **Body**:
+   ```json
+   {
+       "userId": 10001,
+       "productId": 10001,
+       "quantity": 2
+   }
+   ```
+
+#### View Cart
+
+1. **Endpoint**: `POST /carts/view`
+2. **Headers**:
+   - `payerUsername: user`
+   - `payerPassword: pu`
+3. **Body**:
+   ```json
+   {
+       "userId": 10001
+   }
+   ```
+
+### 2. Create Orders
+
+#### Create Order
+
+1. **Endpoint**: `POST /orders/create`
+2. **Headers**:
+   - `payerUsername: user`
+   - `payerPassword: pu`
+3. **Body**:
+   ```json
+   {
+       "userId": 10001
+   }
+   ```
+
+### 3. Make Payments
+
+#### Process Payment
+
+1. **Endpoint**: `POST /payments/process`
+2. **Headers**:
+   - `payerUsername: user`
+   - `payerPassword: pu`
+3. **Body**:
+   ```json
+   {
+       "orderId": 1
+   }
+   ```
+
+## Running the Applications
+
+### Wallet Application:
+
+- Ensure that the Wallet application is running on port 8081.
+
+### TrendWay Application:
+
+- Ensure that the TrendWay application is running on port 8080.
+
+## Example Workflow
+
+### User and Company Registrations:
+
+- Users and admin are predefined as shown above.
+
+### Add Products:
+
+- Products are predefined as shown above.
+
+### User Adds Products to Cart:
+
+- Use the `/carts/add` endpoint to add products to the cart.
+
+### Create an Order:
+
+- Use the `/orders/create` endpoint to create an order with the products in the cart.
+
+### Process the Payment:
+
+- Use the `/payments/process` endpoint to process the payment for the created order.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
