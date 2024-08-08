@@ -24,4 +24,10 @@ public class UserController {
         logger.info("Request to register user: {}", userDTO.getUsername());
         return userService.registerUser(userDTO);
     }
+
+    @PostMapping("/register-admin")
+    public ResponseEntity<ResponseModel> registerAdmin(@RequestBody UserDTO userDTO) {
+        logger.info("Request to register admin: {}", userDTO.getUsername());
+        return userService.registerAdmin(userDTO);
+    }
 }

@@ -1,5 +1,6 @@
 package commercial.TrendWay.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -18,4 +19,9 @@ public class Company {
 
     @Column(name = "wallet_id")
     private Long walletId;
+
+    @OneToOne
+    @JoinColumn(name = "user_id")
+    @JsonManagedReference
+    private User user;
 }

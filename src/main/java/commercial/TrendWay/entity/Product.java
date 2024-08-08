@@ -3,7 +3,7 @@ package commercial.TrendWay.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @Data
@@ -13,14 +13,14 @@ public class Product {
     private Long id;
     private String name;
     private String description;
-    private Double price;
-    private Integer stock;
+    private double price;
+    private int stock;
 
     @ManyToOne
     @JoinColumn(name = "company_id")
     private Company company;
 
-    @ManyToMany
-    @JoinTable(name = "product_category", joinColumns = @JoinColumn(name = "product_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
-    private List<Category> categories;
+    @ElementCollection(targetClass = Category.class)
+    @Enumerated(EnumType.STRING)
+    private Set<Category> categories;
 }

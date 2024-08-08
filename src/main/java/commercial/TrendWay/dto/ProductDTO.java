@@ -1,5 +1,6 @@
 package commercial.TrendWay.dto;
 
+import commercial.TrendWay.entity.Category;
 import lombok.Data;
 
 import java.util.List;
@@ -11,5 +12,5 @@ public class ProductDTO {
     private double price;
     private int stock;
     private Long companyId;
-    private List<Long> categoryIds;
+    private List<Category> categories;
 }

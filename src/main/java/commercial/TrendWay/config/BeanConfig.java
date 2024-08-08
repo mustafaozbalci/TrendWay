@@ -12,7 +12,6 @@ public class BeanConfig {
     public FilterRegistrationBean<Slf4jMDCFilter> servletRegistrationBean() {
         FilterRegistrationBean<Slf4jMDCFilter> filterRegistrationBean = new FilterRegistrationBean<>();
         filterRegistrationBean.setFilter(new Slf4jMDCFilter());
-        filterRegistrationBean.setOrder(2);
         return filterRegistrationBean;
     }
 }

@@ -1,5 +1,6 @@
 package commercial.TrendWay.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -24,4 +25,8 @@ public class User {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference
     private Cart cart;
+
+    @OneToOne(mappedBy = "user")
+    @JsonBackReference
+    private Company company;
 }

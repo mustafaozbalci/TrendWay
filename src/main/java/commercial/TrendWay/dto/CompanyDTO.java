@@ -11,4 +11,5 @@ public class CompanyDTO {
     private String email;
     private String phoneNumber;
     private Long walletId;
+    private Long userId;
 }

@@ -7,10 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/products")
@@ -20,9 +17,9 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping("/add")
-    public ResponseEntity<ResponseModel> addProduct(@RequestBody ProductDTO productDTO) {
+    public ResponseEntity<ResponseModel> addProduct(@RequestHeader("AdminUsername") String adminUsername, @RequestHeader("AdminPassword") String adminPassword, @RequestBody ProductDTO productDTO) {
         logger.info("Request to add product: {}", productDTO.getName());
-        return productService.addProduct(productDTO);
+        return productService.addProduct(adminUsername, adminPassword, productDTO);
     }
 
     @PostMapping("/list")

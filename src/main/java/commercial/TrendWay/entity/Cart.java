@@ -23,4 +23,5 @@ public class Cart {
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<CartItem> cartItems;
+
 }

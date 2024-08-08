@@ -28,25 +28,48 @@ public class OrderService {
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
 
+    /**
+     * Creates an order for a user based on the items in their cart.
+     *
+     * @param userId   The ID of the user placing the order.
+     * @param username The username of the user placing the order.
+     * @param password The password of the user placing the order.
+     * @return ResponseEntity with the order creation status and order details.
+     */
     @Transactional
-    public ResponseEntity<ResponseModel> createOrder(Long userId) {
+    public ResponseEntity<ResponseModel> createOrder(Long userId, String username, String password) {
         logger.info("Creating order for user ID: {}", userId);
+
+        // Find user by ID
         User user = userRepository.findById(userId).orElseThrow(() -> {
             logger.warn("User not found: {}", userId);
             return new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND);
         });
+
+        // Validate user credentials
+        if (!user.getUsername().equals(username) || !user.getPassword().equals(password)) {
+            logger.warn("Invalid credentials for user: {}", username);
+            throw new BadRequestException("INVALID CREDENTIALS", ErrorCodes.INVALID_CREDENTIALS);
+        }
+
+        // Find cart by user
         Cart cart = cartRepository.findByUser(user).orElseThrow(() -> {
             logger.warn("Cart not found for user ID: {}", userId);
             return new BadRequestException("Cart not found", ErrorCodes.CART_NOT_FOUND);
         });
+
+        // Find cart items
         List<CartItem> cartItems = cartItemRepository.findByCart(cart);
 
+        // Check if cart is empty
         if (cartItems.isEmpty()) {
             throw new BadRequestException("Cart is empty", ErrorCodes.CART_EMPTY);
         }
 
         double totalAmount = 0;
+        Company company = cartItems.get(0).getProduct().getCompany(); // Fetch company from the first product
 
+        // Validate product stock and calculate total amount
         for (CartItem cartItem : cartItems) {
             Product product = cartItem.getProduct();
             if (product.getStock() < cartItem.getQuantity()) {
@@ -56,13 +79,14 @@ public class OrderService {
             totalAmount += product.getPrice() * cartItem.getQuantity();
         }
 
-        // Order nesnesini burada tanımlıyoruz
+        // Create new order
         Order order = new Order();
         order.setUser(user);
-        order.setCompany(cartItems.get(0).getProduct().getCompany());
+        order.setCompany(company);
         order.setOrderDate(new Date());
         order.setTotalAmount(totalAmount);
 
+        // Create order items and update product stock
         List<OrderItem> orderItems = cartItems.stream().map(cartItem -> {
             Product product = cartItem.getProduct();
             product.setStock(product.getStock() - cartItem.getQuantity());
@@ -76,8 +100,12 @@ public class OrderService {
             return orderItem;
         }).collect(Collectors.toList());
 
+        // Save order with order items
         order.setOrderItems(orderItems);
         orderRepository.save(order);
+
+        // Clear cart items after order creation
+        cartItemRepository.deleteAll(cartItems);
 
         logger.info("Order created for user ID: {}", userId);
         return ResponseEntity.status(201).body(new ResponseModel(201, "Order created successfully", order));
