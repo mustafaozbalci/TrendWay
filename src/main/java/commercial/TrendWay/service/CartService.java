@@ -10,8 +10,6 @@ import commercial.TrendWay.exceptions.BadRequestException;
 import commercial.TrendWay.exceptions.ErrorCodes;
 import commercial.TrendWay.repository.CartItemRepository;
 import commercial.TrendWay.repository.CartRepository;
-import commercial.TrendWay.repository.ProductRepository;
-import commercial.TrendWay.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -29,53 +27,33 @@ public class CartService {
 
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
-    private final ProductRepository productRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
+    private final ProductService productService;
 
     /**
-     * Adds a product to the user's cart. If the product is already in the cart, it updates the quantity.
+     * Adds a product to the cart.
+     *
+     * @param payerUsername The username of the payer.
+     * @param payerPassword The password of the payer.
+     * @param cartItemDTO   The cart item data transfer object containing product and quantity details.
+     * @return ResponseEntity with the result of the operation.
      */
     @Transactional
     public ResponseEntity<ResponseModel> addToCart(String payerUsername, String payerPassword, CartItemDTO cartItemDTO) {
         logger.info("Adding product to cart for user ID: {}", cartItemDTO.getUserId());
 
-        // Find user by ID
-        User user = userRepository.findById(cartItemDTO.getUserId()).orElseThrow(() -> {
-            logger.warn("User not found: {}", cartItemDTO.getUserId());
-            return new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND);
-        });
+        User user = userService.validateUser(payerUsername, payerPassword);
+        Product product = productService.getProductById(cartItemDTO.getProductId());
 
-        // Validate user credentials
-        if (!user.getUsername().equals(payerUsername) || !user.getPassword().equals(payerPassword)) {
-            logger.warn("User authentication failed for user ID: {}", cartItemDTO.getUserId());
-            return ResponseEntity.status(403).body(new ResponseModel(403, "User authentication failed", null));
-        }
+        Cart cart = cartRepository.findByUser(user).orElseGet(() -> cartRepository.save(new Cart(user)));
 
-        // Find product by ID
-        Product product = productRepository.findById(cartItemDTO.getProductId()).orElseThrow(() -> {
-            logger.warn("Product not found: {}", cartItemDTO.getProductId());
-            return new BadRequestException("Product not found", ErrorCodes.PRODUCT_NOT_FOUND);
-        });
-
-        // Find or create cart for user
-        Cart cart = cartRepository.findByUser(user).orElseGet(() -> {
-            Cart newCart = new Cart();
-            newCart.setUser(user);
-            return cartRepository.save(newCart);
-        });
-
-        // Check if product is already in the cart
         CartItem existingCartItem = cartItemRepository.findByCartAndProduct(cart, product).stream().findFirst().orElse(null);
 
-        // Update quantity if product exists, otherwise add new cart item
         if (existingCartItem != null) {
             existingCartItem.setQuantity(existingCartItem.getQuantity() + cartItemDTO.getQuantity());
             cartItemRepository.save(existingCartItem);
         } else {
-            CartItem cartItem = new CartItem();
-            cartItem.setCart(cart);
-            cartItem.setProduct(product);
-            cartItem.setQuantity(cartItemDTO.getQuantity());
+            CartItem cartItem = new CartItem(cart, product, cartItemDTO.getQuantity());
             cartItemRepository.save(cartItem);
         }
 
@@ -84,76 +62,90 @@ public class CartService {
     }
 
     /**
-     * Removes a product from the user's cart.
+     * Removes a product from the cart.
+     *
+     * @param payerUsername The username of the payer.
+     * @param payerPassword The password of the payer.
+     * @param cartItemDTO   The cart item data transfer object containing product and quantity details.
+     * @return ResponseEntity with the result of the operation.
      */
     @Transactional
     public ResponseEntity<ResponseModel> removeFromCart(String payerUsername, String payerPassword, CartItemDTO cartItemDTO) {
         logger.info("Removing product from cart for user ID: {}", cartItemDTO.getUserId());
 
-        // Find user by ID
-        User user = userRepository.findById(cartItemDTO.getUserId()).orElseThrow(() -> {
-            logger.warn("User not found: {}", cartItemDTO.getUserId());
-            return new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND);
-        });
+        User user = userService.validateUser(payerUsername, payerPassword);
+        Product product = productService.getProductById(cartItemDTO.getProductId());
+        Cart cart = findCartByUserOrThrow(user);
 
-        // Validate user credentials
-        if (!user.getUsername().equals(payerUsername) || !user.getPassword().equals(payerPassword)) {
-            logger.warn("User authentication failed for user ID: {}", cartItemDTO.getUserId());
-            return ResponseEntity.status(403).body(new ResponseModel(403, "User authentication failed", null));
-        }
-
-        // Find product by ID
-        Product product = productRepository.findById(cartItemDTO.getProductId()).orElseThrow(() -> {
-            logger.warn("Product not found: {}", cartItemDTO.getProductId());
-            return new BadRequestException("Product not found", ErrorCodes.PRODUCT_NOT_FOUND);
-        });
-
-        // Find cart for user
-        Cart cart = cartRepository.findByUser(user).orElseThrow(() -> {
-            logger.warn("Cart not found for user ID: {}", cartItemDTO.getUserId());
-            return new BadRequestException("Cart not found", ErrorCodes.CART_NOT_FOUND);
-        });
-
-        // Find cart items
         List<CartItem> cartItems = cartItemRepository.findByCartAndProduct(cart, product);
-
-        // Check if cart item exists
         if (cartItems.isEmpty()) {
             logger.warn("Cart item not found for product ID: {}", cartItemDTO.getProductId());
             throw new BadRequestException("Cart item not found", ErrorCodes.CART_ITEM_NOT_FOUND);
         }
 
-        // Remove cart items
         cartItemRepository.deleteAll(cartItems);
         logger.info("Product removed from cart for user ID: {}", cartItemDTO.getUserId());
         return ResponseEntity.ok(new ResponseModel(200, "Product removed from cart", cart));
     }
 
     /**
-     * Retrieves the user's cart.
+     * Retrieves the cart for a given user.
+     *
+     * @param payerUsername The username of the payer.
+     * @param payerPassword The password of the payer.
+     * @param userId        The ID of the user whose cart is to be retrieved.
+     * @return ResponseEntity with the cart details.
      */
     public ResponseEntity<ResponseModel> getCart(String payerUsername, String payerPassword, Long userId) {
         logger.info("Retrieving cart for user ID: {}", userId);
 
-        // Find user by ID
-        User user = userRepository.findById(userId).orElseThrow(() -> {
-            logger.warn("User not found: {}", userId);
-            return new BadRequestException("User not found", ErrorCodes.USER_NOT_FOUND);
-        });
-
-        // Validate user credentials
-        if (!user.getUsername().equals(payerUsername) || !user.getPassword().equals(payerPassword)) {
-            logger.warn("User authentication failed for user ID: {}", userId);
-            return ResponseEntity.status(403).body(new ResponseModel(403, "User authentication failed", null));
-        }
-
-        // Find cart for user
-        Cart cart = cartRepository.findByUser(user).orElseThrow(() -> {
-            logger.warn("Cart not found for user ID: {}", userId);
-            return new BadRequestException("Cart not found", ErrorCodes.CART_NOT_FOUND);
-        });
+        User user = userService.validateUser(payerUsername, payerPassword);
+        Cart cart = findCartByUserOrThrow(user);
 
         logger.info("Cart retrieved for user ID: {}", userId);
         return ResponseEntity.ok(new ResponseModel(200, "Cart retrieved", cart));
+    }
+
+    /**
+     * Gets the cart for a given user.
+     *
+     * @param user The user whose cart is to be retrieved.
+     * @return The cart of the user.
+     */
+    public Cart getCartByUser(User user) {
+        return findCartByUserOrThrow(user);
+    }
+
+    /**
+     * Gets the items in a given cart.
+     *
+     * @param cart The cart whose items are to be retrieved.
+     * @return A list of cart items.
+     */
+    public List<CartItem> getCartItems(Cart cart) {
+        return cartItemRepository.findByCart(cart);
+    }
+
+    /**
+     * Clears the items in a given cart.
+     *
+     * @param cartItems The list of cart items to be cleared.
+     */
+    public void clearCartItems(List<CartItem> cartItems) {
+        cartItemRepository.deleteAll(cartItems);
+    }
+
+    /**
+     * Finds the cart for a given user or throws an exception if not found.
+     *
+     * @param user The user whose cart is to be retrieved.
+     * @return The cart of the user.
+     * @throws BadRequestException if the cart is not found.
+     */
+    private Cart findCartByUserOrThrow(User user) {
+        return cartRepository.findByUser(user).orElseThrow(() -> {
+            logger.warn("Cart not found for user ID: {}", user.getId());
+            return new BadRequestException("Cart not found", ErrorCodes.CART_NOT_FOUND);
+        });
     }
 }

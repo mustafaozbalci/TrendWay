@@ -2,6 +2,7 @@ package commercial.TrendWay.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
@@ -9,6 +10,7 @@ import java.util.Date;
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,4 +28,11 @@ public class Payment {
 
     @Column(nullable = false)
     private String status;
+
+    public Payment(Order order, Double amount, Date paymentDate, String status) {
+        this.order = order;
+        this.amount = amount;
+        this.paymentDate = paymentDate;
+        this.status = status;
+    }
 }

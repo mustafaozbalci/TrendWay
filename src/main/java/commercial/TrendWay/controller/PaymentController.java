@@ -25,8 +25,8 @@ public class PaymentController {
         logger.info("Request to process payment for order ID: {}", paymentDTO.getOrderId());
         ResponseEntity<ResponseModel> response = paymentService.processPayment(paymentDTO.getOrderId(), payerUsername, payerPassword);
 
-        if (response.getBody() == null) {
-            logger.error("Payment response body is null for order ID: {}", paymentDTO.getOrderId());
+        if (response == null || response.getBody() == null) {
+            logger.error("Payment response or response body is null for order ID: {}", paymentDTO.getOrderId());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ResponseModel(500, "Payment processing failed", null));
         }
 
